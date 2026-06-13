@@ -1,0 +1,42 @@
+# Render Blueprint — deploys the Morning Briefing as a daily Cron Job.
+#
+# Render Cron Jobs run the start command on a schedule, then exit — a perfect fit
+# for this run-once script (no always-on process or node-cron needed in the cloud).
+#
+# IMPORTANT: Render cron schedules run in UTC. 07:00 Asia/Manila (PHT, UTC+8, no DST)
+# = 23:00 UTC the previous day, hence "0 23 * * *". The in-app BRIEFING_TZ still
+# governs the "yesterday" window and the email's date labels.
+#
+# Set the secret env vars (marked sync: false) in the Render dashboard — they are
+# NOT committed. See .env.example for the full list.
+services:
+  - type: cron
+    name: morning-briefing
+    runtime: node
+    plan: starter
+    schedule: "0 23 * * *"          # 07:00 Asia/Manila
+    buildCommand: npm install
+    startCommand: node index.js --mode real
+    envVars:
+      - key: BRIEFING_MODE
+        value: real
+      - key: BRIEFING_TZ
+        value: Asia/Manila
+      - key: AI_PROVIDER
+        value: groq           # free tier; switch to "claude" if you fund Anthropic
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false           # only needed when AI_PROVIDER=claude
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
+      - key: RESEND_TO
+        sync: false

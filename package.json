@@ -1,0 +1,26 @@
+{
+  "name": "morningbriefing",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "send-test": "node send-test.mjs",
+    "briefing": "node index.js",
+    "briefing:demo": "node index.js --mode demo",
+    "serve": "node serve.mjs",
+    "schedule": "node scheduler.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.69.0",
+    "@supabase/supabase-js": "^2.108.1",
+    "dotenv": "^17.4.2",
+    "groq-sdk": "^1.2.1",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.11",
+    "resend": "^6.12.4"
+  }
+}
