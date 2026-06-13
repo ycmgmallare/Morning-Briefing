@@ -21,8 +21,25 @@ signups. Pipeline: **leads → AI summary → templated email → send**.
 - `node index.js --mode demo --no-send` — generate + print, no email
 - `node index.js --mode demo` — send the demo briefing
 - `node index.js --mode real` — yesterday's Supabase signups (needs SUPABASE_* vars)
-- `npm run serve` → http://localhost:3000 — preview the email HTML
+- `npm run serve` → http://localhost:3000 — local **test console** (see below)
 - `node scheduler.mjs --now` — fire one immediate run, then keep scheduling
+
+The shared pipeline lives in `run.js` (`runBriefing({ mode, when, provider, send })`);
+`index.js`, `scheduler.mjs`, and `serve.mjs` all call it.
+
+## Web console (`app.js` handler; `serve.mjs` local, `api/index.js` on Vercel)
+The request handler + pages live in `app.js` (no `.listen()` — imported by both entry points).
+Deployed publicly it's gated by `CONSOLE_PASSWORD` (Basic Auth, skips `/healthz`); blank = open
+locally. Vercel cron hits `api/cron.js` (guarded by `CRON_SECRET`). See `README.md` + `vercel.json`.
+- `/signup` — form (Name, Email, optional Company, required consent checkbox) → inserts a
+  row via `addSignup()` in `leads.js`.
+- `/admin` — signups manager (lists today/yesterday rows, per-row **Delete**, **Seed test
+  data** = 6 sample leads dated today+yesterday, **Clear all**) + force-send buttons
+  (**Demo**, **Today's**, **Yesterday's**). Backed by `listSignups`/`deleteSignup`/
+  `clearSignups`/`seedSignups` in `leads.js`.
+- `/preview` — email template preview; `/healthz` — uptime check.
+- Fast test loop: `/signup` → submit → `/admin` → **Today** → email lands in `RESEND_TO`.
+  The briefing always sends to `RESEND_TO` (Resend sandbox); the form's Email is lead data.
 
 ## Config
 Secrets live in `.env` (gitignored); see `.env.example`. On Render, set them in the

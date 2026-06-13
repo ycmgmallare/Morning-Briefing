@@ -22,9 +22,7 @@
 
 import 'dotenv/config';
 import cron from 'node-cron';
-import { getLeads } from './leads.js';
-import { generateBriefing, emptyBriefing } from './briefing.js';
-import { sendBriefing } from './email.js';
+import { runBriefing } from './run.js';
 
 const CRON = process.env.BRIEFING_CRON || '0 7 * * *'; // 7:00 AM daily
 const TZ = process.env.BRIEFING_TZ || 'Asia/Manila';
@@ -34,15 +32,10 @@ function stamp() {
   return new Date().toLocaleString('en-US', { timeZone: TZ, hour12: false });
 }
 
-async function runBriefing() {
+async function runDailyBriefing() {
   console.log(`\n[${stamp()} ${TZ}] Running daily briefing (mode: ${MODE})…`);
   try {
-    const leads = await getLeads(MODE);
-    const briefing = leads.length === 0 ? emptyBriefing() : await generateBriefing(leads);
-    const result = await sendBriefing({
-      subject: `Morning Briefing — ${briefing.date}`,
-      briefing,
-    });
+    const { result } = await runBriefing({ mode: MODE, when: 'yesterday' });
     console.log(`[${stamp()} ${TZ}] ✅ Sent via ${result.provider} → ${result.to} (id: ${result.id})`);
   } catch (err) {
     // Log and keep the scheduler alive — one bad run shouldn't kill the job.
@@ -55,7 +48,7 @@ if (!cron.validate(CRON)) {
   process.exit(1);
 }
 
-const task = cron.schedule(CRON, runBriefing, {
+const task = cron.schedule(CRON, runDailyBriefing, {
   timezone: TZ,
   name: 'morning-briefing',
   noOverlap: true, // skip a run if the previous one is still in flight

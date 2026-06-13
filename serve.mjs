@@ -1,42 +1,26 @@
-// Local preview server for the Morning Briefing email.
+// Local launcher for the Morning Briefing web console.
 //
-// Renders the SAME template used for real sends (email-template.js) so you can
-// preview the email as a webpage. No external deps — just Node's http module.
+// The request handler lives in app.js (shared with the Vercel function in
+// api/index.js). This file just wraps it in a Node HTTP server for local use.
 //
 //   node serve.mjs            -> http://localhost:3000
 //
-// Routes:
-//   /            the rendered email (static SAMPLE_BRIEFING)
-//   /healthz     plain "ok" for tunnels/uptime checks
+// Routes (see app.js): / · /signup · /admin · /preview · /healthz
+//
+// Auth: set CONSOLE_PASSWORD in .env to require a login (otherwise open locally).
+// NOTE: /admin can send real email (to RESEND_TO) and write/delete your database.
 
+import 'dotenv/config';
 import http from 'node:http';
-import { renderBriefingEmail, SAMPLE_BRIEFING } from './email-template.js';
+import { handler } from './app.js';
 
 const PORT = process.env.PORT || 3000;
 
-const server = http.createServer((req, res) => {
-  const url = (req.url || '/').split('?')[0];
-
-  if (url === '/healthz') {
-    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('ok');
-    return;
-  }
-
-  if (url === '/' || url === '/index.html') {
-    const html = renderBriefingEmail(SAMPLE_BRIEFING);
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end(html);
-    return;
-  }
-
-  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-  res.end('Not found');
-});
-
-server.listen(PORT, () => {
-  console.log(`\n📨 Morning Briefing preview running:`);
+http.createServer(handler).listen(PORT, () => {
+  console.log(`\n📨 Morning Briefing — web console:`);
   console.log(`   → http://localhost:${PORT}\n`);
-  console.log(`   (Renders the same template used for real email sends.)`);
-  console.log(`   Stop with Ctrl+C.\n`);
+  console.log(`   /signup   add a signup to Supabase`);
+  console.log(`   /admin    manage signups + send a briefing now`);
+  console.log(`   /preview  email template preview`);
+  console.log(`\n   ${process.env.CONSOLE_PASSWORD ? 'Password gate ON.' : 'No password (set CONSOLE_PASSWORD to enable).'} Sends real email to RESEND_TO. Ctrl+C to stop.\n`);
 });

@@ -1,7 +1,8 @@
-// Morning Briefing orchestrator.
+// Morning Briefing orchestrator (CLI).
 //
 // Flow: get leads (demo or real) -> AI generates a prioritized briefing
 // (AI_PROVIDER: groq | claude) -> print it -> send via the selected email provider.
+// The actual pipeline lives in run.js (shared with scheduler.mjs and serve.mjs).
 //
 // Usage:
 //   node index.js                          # demo mode, send via default provider (resend)
@@ -10,9 +11,7 @@
 //   node index.js --mode real              # real mode — yesterday's signups from Supabase
 
 import 'dotenv/config';
-import { getLeads } from './leads.js';
-import { generateBriefing, emptyBriefing } from './briefing.js';
-import { sendBriefing } from './email.js';
+import { runBriefing } from './run.js';
 import { renderBriefingText } from './email-template.js';
 
 function parseArgs(argv) {
@@ -31,38 +30,19 @@ async function main() {
 
   console.log(`\n📋 Morning Briefing — mode: ${mode}\n`);
 
-  // 1. Leads
-  const leads = await getLeads(mode);
+  const { leads, briefing, result } = await runBriefing({ mode, provider, send });
   console.log(`Loaded ${leads.length} lead(s).`);
 
-  // 2. Summary — a day with no signups is normal, not an error: skip Claude
-  //    and send a simple "no signups" briefing instead.
-  let briefing;
-  if (leads.length === 0) {
-    console.log('No new signups — sending a "no signups" briefing.\n');
-    briefing = emptyBriefing();
-  } else {
-    console.log(`Generating prioritized briefing with ${(process.env.AI_PROVIDER || 'groq')}…\n`);
-    briefing = await generateBriefing(leads);
-  }
-
-  // 3. Print (plain-text rendering of the same briefing)
+  // Print the plain-text rendering of the same briefing.
   console.log('─'.repeat(60));
   console.log(renderBriefingText(briefing));
   console.log('─'.repeat(60) + '\n');
 
-  // 4. Send
-  if (!send) {
+  if (result) {
+    console.log(`✅ Sent via ${result.provider} → ${result.to} (id: ${result.id})`);
+  } else {
     console.log('Skipping send (--no-send).');
-    return;
   }
-
-  const result = await sendBriefing({
-    subject: `Morning Briefing — ${briefing.date}`,
-    briefing,
-    provider,
-  });
-  console.log(`✅ Sent via ${result.provider} → ${result.to} (id: ${result.id})`);
 }
 
 main().catch((err) => {
