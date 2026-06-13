@@ -1,8 +1,7 @@
 {
   "name": "morningbriefing",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Automated morning email summarizing yesterday's signups (AI + Resend).",
   "scripts": {
     "send-test": "node send-test.mjs",
     "briefing": "node index.js",
